@@ -1,0 +1,8 @@
+# Ignore all private keys
+id_rsa
+id_ed25519
+*.pem
+*.key
+
+# Ignore sensitive environment files
+.env

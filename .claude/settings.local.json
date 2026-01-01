@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(dir:*)",
+      "Bash(docker-compose:*)",
+      "Bash(curl:*)",
+      "Bash(timeout /t 10 /nobreak)",
+      "Bash(echo:*)",
+      "Bash(grep:*)"
+    ]
+  }
+}
