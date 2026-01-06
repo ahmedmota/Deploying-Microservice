@@ -40,21 +40,41 @@ app.get('/health', async (req, res) => {
   const { sequelize } = require('./config/database');
   const { redisClient } = require('./config/redis');
 
+  const health = {
+    status: 'healthy',
+    service: 'product-service',
+    timestamp: new Date().toISOString(),
+    checks: {
+      database: 'unknown',
+      redis: 'unknown',
+    },
+  };
+
   try {
     await sequelize.authenticate();
-    await redisClient.ping();
-    res.json({
-      status: 'healthy',
-      service: 'product-service',
-      timestamp: new Date().toISOString(),
-    });
+    health.checks.database = 'connected';
   } catch (error) {
-    logger.error('Health check failed:', error);
-    res.status(503).json({
-      status: 'unhealthy',
-      error: error.message,
-    });
+    health.checks.database = 'disconnected';
+    health.status = 'degraded';
+    logger.error('Database health check failed:', error);
   }
+
+  try {
+    if (redisClient.isOpen) {
+      await redisClient.ping();
+      health.checks.redis = 'connected';
+    } else {
+      health.checks.redis = 'disconnected';
+      health.status = 'degraded';
+    }
+  } catch (error) {
+    health.checks.redis = 'disconnected';
+    health.status = 'degraded';
+    logger.error('Redis health check failed:', error);
+  }
+
+  const statusCode = health.status === 'healthy' ? 200 : 503;
+  res.status(statusCode).json(health);
 });
 
 // Metrics endpoint
