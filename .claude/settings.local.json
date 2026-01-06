@@ -6,7 +6,8 @@
       "Bash(curl:*)",
       "Bash(timeout /t 10 /nobreak)",
       "Bash(echo:*)",
-      "Bash(grep:*)"
+      "Bash(grep:*)",
+      "Bash(chmod:*)"
     ]
   }
 }

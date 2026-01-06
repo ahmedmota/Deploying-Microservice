@@ -1,6 +1,43 @@
 const { Sequelize } = require('sequelize');
 const config = require('./config');
 const logger = require('../utils/logger');
+const fs = require('fs');
+const path = require('path');
+
+// Configure SSL options for database connection
+const getSSLConfig = () => {
+  const sslEnabled = process.env.DB_SSL === 'true';
+
+  if (!sslEnabled) {
+    logger.info('Database SSL is disabled');
+    return false;
+  }
+
+  const rejectUnauthorized = process.env.DB_SSL_REJECT_UNAUTHORIZED !== 'false';
+  const caPath = process.env.DB_SSL_CA_PATH;
+
+  let ca;
+  if (caPath) {
+    if (fs.existsSync(caPath)) {
+      ca = fs.readFileSync(caPath).toString();
+      logger.info(`Database SSL enabled with CA certificate from: ${caPath}`);
+    } else {
+      logger.warn(`⚠️  Database SSL CA certificate not found at: ${caPath}`);
+    }
+  } else {
+    logger.warn('⚠️  Database SSL enabled but no CA certificate path provided (DB_SSL_CA_PATH)');
+    if (rejectUnauthorized) {
+      logger.warn('⚠️  Connection may fail with rejectUnauthorized=true and no certificate');
+      logger.warn('   Set DB_SSL_REJECT_UNAUTHORIZED=false to bypass certificate verification (less secure)');
+    }
+  }
+
+  return {
+    require: true,
+    rejectUnauthorized,
+    ca,
+  };
+};
 
 // Initialize Sequelize with PostgreSQL
 const sequelize = new Sequelize(
@@ -16,6 +53,7 @@ const sequelize = new Sequelize(
     dialectOptions: {
       statement_timeout: 30000, // 30 seconds
       idle_in_transaction_session_timeout: 60000, // 60 seconds
+      ssl: getSSLConfig(),
     },
     define: {
       timestamps: true,
